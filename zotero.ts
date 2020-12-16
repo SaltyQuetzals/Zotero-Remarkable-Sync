@@ -1,7 +1,37 @@
-interface ZoteroRequestQueryParams{
+interface ZoteroRequestQueryParams {
   format: "json" | "atom" | "bib";
   content: string;
   limit?: number;
+}
+
+export interface Collection {
+  key: string;
+  version: number;
+  library: {
+    type: "group";
+    id: number;
+    name: string;
+    links: { alternate: Object };
+  };
+  links: {
+    self: {
+      href: string;
+      type: string;
+    };
+    alternate: {
+      href: string;
+      type: string;
+    };
+  };
+  meta: { numCollections: number; numItems: number };
+
+  data: {
+    key: string;
+    version: number;
+    name: string;
+    parentCollection: false | string;
+    relations: {};
+  };
 }
 
 export class Zotero {
@@ -9,8 +39,7 @@ export class Zotero {
   constructor(
     private libraryId: string,
     private libraryType: "groups" | "user",
-    private apiKey: string,
-    private preserveJsonOrder: boolean = false
+    private apiKey: string
   ) {}
 
   private buildEncodedQueryParameters(
@@ -35,7 +64,9 @@ export class Zotero {
     if (providedParams.format === "bib") {
       providedParams.limit = undefined;
     }
-    return new URLSearchParams(providedParams as Record<string, string>).toString();
+    return new URLSearchParams(
+      providedParams as Record<string, string>
+    ).toString();
   }
 
   private getDefaultHeaders() {
@@ -60,7 +91,7 @@ export class Zotero {
     return (await this.makeRequest(route)).json();
   }
 
-  public async listCollections() {
+  public async listCollections(): Promise<Array<Collection>> {
     const route = `/${this.libraryType}/${this.libraryId}/collections`;
     return (await this.makeRequest(route)).json();
   }
