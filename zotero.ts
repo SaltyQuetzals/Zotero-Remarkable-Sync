@@ -11,7 +11,7 @@ export interface Collection {
     type: "group";
     id: number;
     name: string;
-    links: { alternate: Object };
+    links: { alternate: unknown };
   };
   links: {
     self: {
@@ -30,6 +30,59 @@ export interface Collection {
     version: number;
     name: string;
     parentCollection: false | string;
+    relations: unknown;
+  };
+}
+
+export const isCollection = (x: any): x is Collection => x.key;
+
+export interface Item {
+  key: string;
+  version: 1;
+  library: {
+    type: string;
+    id: number;
+    name: string;
+    links: {
+      alternate: {
+        href: string;
+        type: string;
+      };
+    };
+  };
+  links: {
+    self: {
+      href: string;
+      type: string;
+    };
+    alternate: {
+      href: string;
+      type: string;
+    };
+  };
+  meta: {
+    numChildren: number;
+  };
+  data: {
+    key: string;
+    version: number;
+    itemType: string;
+    title: string;
+    creators: [];
+    abstractNote: string;
+    websiteTitle: string;
+    websiteType: string;
+    date: string;
+    shortTitle: string;
+    url: string;
+    accessDate: string;
+    language: string;
+    rights: string;
+    extra: string;
+    dateAdded: string;
+    dateModified: string;
+    tags: [];
+    collections: [string];
     relations: {};
   };
 }
@@ -85,14 +138,33 @@ export class Zotero {
   }
 
   public async getFile(item: string) {
-    const route = `/${this.libraryId}/${
-      this.libraryType
+    const route = `/${this.libraryType}/${
+      this.libraryId
     }/items/${item.toLocaleUpperCase()}/file`;
     return (await this.makeRequest(route)).json();
   }
 
-  public async listCollections(): Promise<Array<Collection>> {
+  public async listCollections(): Promise<Collection[]> {
     const route = `/${this.libraryType}/${this.libraryId}/collections`;
     return (await this.makeRequest(route)).json();
   }
+
+  public async getItemsForCollection(collectionKey: string): Promise<Item[]> {
+    const route = `/${this.libraryType}/${this.libraryId}/collections/${collectionKey}/items`;
+    const response = await this.makeRequest(route);
+    console.log(response);
+    return await response.json();
+  }
+
+  public async getFileUint8Array(itemKey: string): Promise<Uint8Array> {
+    const route = `/${this.libraryType}/${this.libraryId}/items/${itemKey}/file`;
+    const response = await this.makeRequest(route);
+    if (!response.body) {
+      throw new Error("Error downloading file.");
+    }
+    const blob = await response.blob();
+    const buffer = await blob.arrayBuffer();
+    return new Deno.Buffer(buffer).bytes();
+  }
+
 }
